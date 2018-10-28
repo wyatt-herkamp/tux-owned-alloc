@@ -48,15 +48,24 @@ impl<T> OwnedAlloc<T>
 where
     T: ?Sized,
 {
-    /// Drops the memory and returns the allocation now considered
-    /// uninitialized.
-    pub fn drop_in_place(self) -> UninitAlloc<T> {
-        let alloc = unsafe {
-            self.nnptr.as_ptr().drop_in_place();
-            UninitAlloc::from_raw(self.nnptr)
-        };
-        mem::forget(self);
-        alloc
+    /// Recreate the `OwnedAlloc` from a raw non-null pointer.
+    ///
+    /// # Safety
+    /// This functions is `unsafe` because passing the wrong pointer leads to
+    /// undefined behaviour. Passing a pointer to uninitialized memory is also
+    /// undefined behaviour.
+    pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
+        Self { nnptr, _marker: PhantomData }
+    }
+
+    /// Converts the plain old standard library `Box` into an owned allocation.
+    ///
+    /// # Safety
+    /// This function is `unsafe` because there are no guarantees that `Box` and
+    /// `OwnedAlloc` allocate in the same way. They probably do in the Rust
+    /// version you are using, but there are no future guarantees.
+    pub unsafe fn from_box(boxed: Box<T>) -> Self {
+        Self::from_raw(NonNull::new_unchecked(Box::into_raw(boxed)))
     }
 
     /// Returns the raw non-null pointer of the allocation.
@@ -72,14 +81,25 @@ where
         nnptr
     }
 
-    /// Recreate the `OwnedAlloc` from a raw non-null pointer.
+    /// Converts the owned allocation into a plain old standard library `Box`.
     ///
     /// # Safety
-    /// This functions is `unsafe` because passing the wrong pointer leads to
-    /// undefined behaviour. Passing a pointer to uninitialized memory is also
-    /// undefined behaviour.
-    pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
-        Self { nnptr, _marker: PhantomData }
+    /// This function is `unsafe` because there are no guarantees that `Box` and
+    /// `OwnedAlloc` allocate in the same way. They probably do in the Rust
+    /// version you are using, but there are no future guarantees.
+    pub unsafe fn into_box(self) -> Box<T> {
+        Box::from_raw(self.into_raw().as_ptr())
+    }
+
+    /// Drops the memory and returns the allocation now considered
+    /// uninitialized.
+    pub fn drop_in_place(self) -> UninitAlloc<T> {
+        let alloc = unsafe {
+            self.nnptr.as_ptr().drop_in_place();
+            UninitAlloc::from_raw(self.nnptr)
+        };
+        mem::forget(self);
+        alloc
     }
 }
 

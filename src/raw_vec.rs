@@ -70,31 +70,24 @@ impl<T> RawVec<T> {
         res.map(|nnptr| Self { nnptr, cap, _marker: PhantomData })
     }
 
-    /// The requested capacity. It is guaranteed to be the capacity passed to
-    /// the last capacity-modifier method. Those are `with_capacity`,
-    /// `try_with_capacity` and `resize`. The methods `new` and `try_new`
-    /// initialize the capacity to `0`.
-    pub fn cap(&self) -> usize {
-        self.cap
-    }
-
-    /// The raw non-null pointer to the first element.
-    pub fn raw(&self) -> NonNull<T> {
-        self.nnptr
-    }
-
-    /// The raw non-null pointer to the slice with length equal to the
-    /// `RawVec`'s capacity.
-    pub fn raw_slice(&self) -> NonNull<[T]> {
-        unsafe { NonNull::from(self.as_slice()) }
-    }
-
-    /// "Forgets" dropping the allocation and returns a raw non-null pointer to
-    /// the slice with length equal to the `RawVec`'s capacity.
-    pub fn into_raw_slice(self) -> NonNull<[T]> {
-        let ptr = self.raw_slice();
-        mem::forget(self);
-        ptr
+    /// Creates a `RawVec` from a plain old standard library `Vec`. Beware, only
+    /// the pointer and the capacity are saved. The length is discarded. If you
+    /// want to keep track of the length, you will have to store it for
+    /// yourself. Note also that no element is dropped (ever) by the
+    /// `RawVec`.
+    ///
+    /// # Safety
+    /// This function is `unsafe` because there are no guarantees that `Vec` and
+    /// `RawVec` allocate in the same way. They probably do in the Rust version
+    /// you are using, but there are no future guarantees.
+    pub unsafe fn from_vec(mut vec: Vec<T>) -> Self {
+        let this = Self {
+            nnptr: NonNull::new_unchecked(vec.as_mut_ptr()),
+            cap: vec.capacity(),
+            _marker: PhantomData,
+        };
+        mem::forget(vec);
+        this
     }
 
     /// Recreate the `RawVec` from a raw non-null pointer and a capacity.
@@ -121,6 +114,33 @@ impl<T> RawVec<T> {
         }
     }
 
+    /// The requested allocation capacity. It is guaranteed to be the capacity
+    /// passed to the last capacity-modifier method. Those are
+    /// `with_capacity`, `try_with_capacity` and `resize`. The methods `new`
+    /// and `try_new` initialize the capacity to `0`.
+    pub fn cap(&self) -> usize {
+        self.cap
+    }
+
+    /// The raw non-null pointer to the first element.
+    pub fn raw(&self) -> NonNull<T> {
+        self.nnptr
+    }
+
+    /// The raw non-null pointer to the slice with length equal to the
+    /// `RawVec`'s capacity.
+    pub fn raw_slice(&self) -> NonNull<[T]> {
+        unsafe { NonNull::from(self.as_slice()) }
+    }
+
+    /// "Forgets" dropping the allocation and returns a raw non-null pointer to
+    /// the slice with length equal to the `RawVec`'s capacity.
+    pub fn into_raw_slice(self) -> NonNull<[T]> {
+        let ptr = self.raw_slice();
+        mem::forget(self);
+        ptr
+    }
+
     /// Encodes the `RawVec` as an immutable reference to a slice with length
     /// equal to the capacity.
     ///
@@ -139,6 +159,22 @@ impl<T> RawVec<T> {
     /// element is accessed incorrectly, undefined behavior occurs.
     pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
         slice::from_raw_parts_mut(self.nnptr.as_ptr(), self.cap())
+    }
+
+    /// Creates a plain old standard library `Vec` from the `RawVec` and a given
+    /// length.
+    ///
+    /// # Safety
+    /// This function is `unsafe` because there are no guarantees that `Vec` and
+    /// `RawVec` allocate in the same way. They probably do in the Rust version
+    /// you are using, but there are no future guarantees. Also, the length
+    /// argument must be passed correctly, since the elements until the given
+    /// length will be considered correctly, but the `RawVec` initialize no
+    /// element.
+    pub unsafe fn into_vec(self, len: usize) -> Vec<T> {
+        let vec = Vec::from_raw_parts(self.nnptr.as_ptr(), len, self.cap);
+        mem::forget(self);
+        vec
     }
 
     /// Resizes the `RawVec` with a given capacity. In case of allocation

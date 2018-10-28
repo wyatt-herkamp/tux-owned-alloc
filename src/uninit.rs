@@ -73,6 +73,15 @@ where
         OwnedAlloc::from_raw(raw)
     }
 
+    /// Recreate the `UninitAlloc` from a raw non-null pointer.
+    ///
+    /// # Safety
+    /// This functions is `unsafe` because passing the wrong pointer leads to
+    /// undefined behaviour.
+    pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
+        Self { nnptr, _marker: PhantomData }
+    }
+
     /// Returns the raw non-null pointer of the allocation.
     pub fn raw(&self) -> NonNull<T> {
         self.nnptr
@@ -83,15 +92,6 @@ where
         let nnptr = self.nnptr;
         mem::forget(self);
         nnptr
-    }
-
-    /// Recreate the `UninitAlloc` from a raw non-null pointer.
-    ///
-    /// # Safety
-    /// This functions is `unsafe` because passing the wrong pointer leads to
-    /// undefined behaviour.
-    pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
-        Self { nnptr, _marker: PhantomData }
     }
 }
 
