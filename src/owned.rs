@@ -2,6 +2,7 @@ use super::UninitAlloc;
 use std::{
     alloc::{dealloc, Layout},
     mem,
+    ops::{Deref, DerefMut},
     ptr::NonNull,
 };
 
@@ -16,6 +17,13 @@ impl<T> OwnedAlloc<T> {
 
     pub fn try_new(val: T) -> Option<Self> {
         UninitAlloc::try_new().map(|alloc| alloc.init(val))
+    }
+
+    pub fn move_inner(self) -> (T, UninitAlloc<T>) {
+        let val = unsafe { self.nnptr.as_ptr().read() };
+        let alloc = unsafe { UninitAlloc::from_raw(self.nnptr) };
+        mem::forget(self);
+        (val, alloc)
     }
 
     pub fn into_raw(self) -> NonNull<T> {
@@ -35,5 +43,19 @@ impl<T> Drop for OwnedAlloc<T> {
             self.nnptr.as_ptr().drop_in_place();
             dealloc(self.nnptr.cast().as_ptr(), Layout::new::<T>());
         }
+    }
+}
+
+impl<T> Deref for OwnedAlloc<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        unsafe { self.nnptr.as_ref() }
+    }
+}
+
+impl<T> DerefMut for OwnedAlloc<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        unsafe { self.nnptr.as_mut() }
     }
 }

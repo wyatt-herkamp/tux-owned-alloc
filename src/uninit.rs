@@ -21,18 +21,18 @@ impl<T> UninitAlloc<T> {
             .map(|nnptr| Self { nnptr })
     }
 
-    pub fn into_raw(self) -> NonNull<T> {
-        let nnptr = self.nnptr;
-        mem::forget(self);
-        nnptr
-    }
-
     pub fn init(self, val: T) -> OwnedAlloc<T> {
         let raw = self.into_raw();
         unsafe {
             raw.as_ptr().write(val);
             OwnedAlloc::from_raw(raw)
         }
+    }
+
+    pub fn into_raw(self) -> NonNull<T> {
+        let nnptr = self.nnptr;
+        mem::forget(self);
+        nnptr
     }
 
     pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
