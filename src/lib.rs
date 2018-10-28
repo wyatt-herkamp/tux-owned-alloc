@@ -2,6 +2,7 @@ mod uninit;
 mod owned;
 mod cache;
 mod raw_vec;
+mod maybe_uninit;
 mod err;
 
 pub use self::{
