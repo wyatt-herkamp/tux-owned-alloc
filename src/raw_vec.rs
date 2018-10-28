@@ -139,3 +139,15 @@ impl<T> From<UninitAlloc<T>> for RawVec<T> {
         Self { nnptr: alloc.into_raw(), cap: 1, _marker: PhantomData }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::RawVec;
+
+    #[test]
+    fn cap_is_the_one_passed() {
+        let alloc = RawVec::<usize>::with_capacity(20);
+
+        assert_eq!(alloc.cap(), 20);
+    }
+}

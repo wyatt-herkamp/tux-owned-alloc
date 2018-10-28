@@ -2,6 +2,5 @@
 name = "owned_alloc"
 version = "0.1.0"
 authors = ["Bruno Zimmermann <brunoczim@gmail.com>"]
-edition = "2018"
 
 [dependencies]

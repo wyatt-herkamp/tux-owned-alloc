@@ -119,3 +119,26 @@ impl<T> From<T> for OwnedAlloc<T> {
         Self::new(val)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::OwnedAlloc;
+
+    #[test]
+    fn inner_eq() {
+        let mut alloc = OwnedAlloc::new(20);
+
+        assert_eq!(*alloc, 20);
+
+        *alloc = 30;
+
+        assert_eq!(*alloc, 30);
+    }
+
+    #[test]
+    fn move_inner_eq() {
+        let alloc = OwnedAlloc::new(20);
+
+        assert_eq!(alloc.move_inner().0, 20);
+    }
+}

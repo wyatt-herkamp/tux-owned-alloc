@@ -100,3 +100,20 @@ impl<T> From<RawVec<T>> for UninitAlloc<[T]> {
         Self { nnptr: alloc.into_raw_slice(), _marker: PhantomData }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::UninitAlloc;
+
+    #[test]
+    fn into_from_raw() {
+        let alloc = UninitAlloc::<usize>::new();
+        let raw_borrowed = alloc.raw();
+        let raw = alloc.into_raw();
+
+        assert_eq!(raw, raw_borrowed);
+
+        let alloc = unsafe { UninitAlloc::from_raw(raw) };
+        assert_eq!(alloc.raw(), raw_borrowed);
+    }
+}
