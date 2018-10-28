@@ -139,6 +139,9 @@ impl<T> From<T> for OwnedAlloc<T> {
     }
 }
 
+unsafe impl<T> Send for UninitAlloc<T> where T: ?Sized + Send {}
+unsafe impl<T> Sync for UninitAlloc<T> where T: ?Sized + Sync {}
+
 #[cfg(test)]
 mod test {
     use super::OwnedAlloc;

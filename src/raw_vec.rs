@@ -201,6 +201,9 @@ impl<T> From<UninitAlloc<T>> for RawVec<T> {
     }
 }
 
+unsafe impl<T> Send for UninitAlloc<T> where T: Send {}
+unsafe impl<T> Sync for UninitAlloc<T> where T: Sync {}
+
 #[cfg(test)]
 mod test {
     use super::RawVec;

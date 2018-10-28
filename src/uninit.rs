@@ -122,6 +122,9 @@ impl<T> From<RawVec<T>> for UninitAlloc<[T]> {
     }
 }
 
+unsafe impl<T> Send for UninitAlloc<T> where T: ?Sized + Send {}
+unsafe impl<T> Sync for UninitAlloc<T> where T: ?Sized + Sync {}
+
 #[cfg(test)]
 mod test {
     use super::UninitAlloc;
