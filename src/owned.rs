@@ -1,4 +1,4 @@
-use super::UninitAlloc;
+use super::{AllocErr, UninitAlloc};
 use std::{
     alloc::{dealloc, Layout},
     fmt,
@@ -21,7 +21,7 @@ impl<T> OwnedAlloc<T> {
         UninitAlloc::new().init(val)
     }
 
-    pub fn try_new(val: T) -> Option<Self> {
+    pub fn try_new(val: T) -> Result<Self, AllocErr> {
         UninitAlloc::try_new().map(|alloc| alloc.init(val))
     }
 

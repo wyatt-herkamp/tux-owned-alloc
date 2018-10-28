@@ -1,4 +1,4 @@
-use super::OwnedAlloc;
+use super::{AllocErr, OwnedAlloc};
 use std::{
     alloc::{alloc, dealloc, handle_alloc_error, Layout},
     fmt,
@@ -17,17 +17,16 @@ where
 
 impl<T> UninitAlloc<T> {
     pub fn new() -> Self {
-        Self::try_new()
-            .unwrap_or_else(|| handle_alloc_error(Layout::new::<T>()))
+        Self::try_new().unwrap_or_else(|err| handle_alloc_error(err.layout))
     }
 
-    pub fn try_new() -> Option<Self> {
+    pub fn try_new() -> Result<Self, AllocErr> {
         let layout = Layout::new::<T>();
 
         let nnptr = if layout.size() == 0 {
-            Some(NonNull::dangling())
+            Ok(NonNull::dangling())
         } else {
-            NonNull::new(unsafe { alloc(layout) })
+            NonNull::new(unsafe { alloc(layout) }).ok_or(AllocErr { layout })
         };
 
         nnptr
