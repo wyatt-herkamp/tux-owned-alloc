@@ -2,12 +2,17 @@ use super::OwnedAlloc;
 use std::{
     alloc::{alloc, dealloc, handle_alloc_error, Layout},
     fmt,
+    marker::PhantomData,
     mem,
     ptr::NonNull,
 };
 
-pub struct UninitAlloc<T> {
+pub struct UninitAlloc<T>
+where
+    T: ?Sized,
+{
     nnptr: NonNull<T>,
+    _marker: PhantomData<T>,
 }
 
 impl<T> UninitAlloc<T> {
@@ -17,9 +22,17 @@ impl<T> UninitAlloc<T> {
     }
 
     pub fn try_new() -> Option<Self> {
-        NonNull::new(unsafe { alloc(Layout::new::<T>()) })
+        let layout = Layout::new::<T>();
+
+        let nnptr = if layout.size() == 0 {
+            Some(NonNull::dangling())
+        } else {
+            NonNull::new(unsafe { alloc(layout) })
+        };
+
+        nnptr
             .map(NonNull::cast::<T>)
-            .map(|nnptr| Self { nnptr })
+            .map(|nnptr| Self { nnptr, _marker: PhantomData })
     }
 
     pub fn init(self, val: T) -> OwnedAlloc<T> {
@@ -29,7 +42,12 @@ impl<T> UninitAlloc<T> {
             OwnedAlloc::from_raw(raw)
         }
     }
+}
 
+impl<T> UninitAlloc<T>
+where
+    T: ?Sized,
+{
     pub unsafe fn init_in_place<F>(self, init: F) -> OwnedAlloc<T>
     where
         F: FnOnce(&mut T),
@@ -50,17 +68,29 @@ impl<T> UninitAlloc<T> {
     }
 
     pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
-        Self { nnptr }
+        Self { nnptr, _marker: PhantomData }
     }
 }
 
-impl<T> Drop for UninitAlloc<T> {
+impl<T> Drop for UninitAlloc<T>
+where
+    T: ?Sized,
+{
     fn drop(&mut self) {
-        unsafe { dealloc(self.nnptr.cast().as_ptr(), Layout::new::<T>()) }
+        unsafe {
+            let layout = Layout::for_value(self.nnptr.as_ref());
+
+            if layout.size() != 0 {
+                dealloc(self.nnptr.cast().as_ptr(), layout);
+            }
+        }
     }
 }
 
-impl<T> fmt::Debug for UninitAlloc<T> {
+impl<T> fmt::Debug for UninitAlloc<T>
+where
+    T: ?Sized,
+{
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         write!(fmtr, "{:?}", self.nnptr)
     }

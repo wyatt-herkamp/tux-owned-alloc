@@ -2,13 +2,18 @@ use super::UninitAlloc;
 use std::{
     alloc::{dealloc, Layout},
     fmt,
+    marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
     ptr::NonNull,
 };
 
-pub struct OwnedAlloc<T> {
+pub struct OwnedAlloc<T>
+where
+    T: ?Sized,
+{
     nnptr: NonNull<T>,
+    _marker: PhantomData<T>,
 }
 
 impl<T> OwnedAlloc<T> {
@@ -26,7 +31,12 @@ impl<T> OwnedAlloc<T> {
         mem::forget(self);
         (val, alloc)
     }
+}
 
+impl<T> OwnedAlloc<T>
+where
+    T: ?Sized,
+{
     pub fn raw(&self) -> NonNull<T> {
         self.nnptr
     }
@@ -38,20 +48,29 @@ impl<T> OwnedAlloc<T> {
     }
 
     pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
-        Self { nnptr }
+        Self { nnptr, _marker: PhantomData }
     }
 }
 
-impl<T> Drop for OwnedAlloc<T> {
+impl<T> Drop for OwnedAlloc<T>
+where
+    T: ?Sized,
+{
     fn drop(&mut self) {
         unsafe {
+            let layout = Layout::for_value(self.nnptr.as_ref());
             self.nnptr.as_ptr().drop_in_place();
-            dealloc(self.nnptr.cast().as_ptr(), Layout::new::<T>());
+            if layout.size() != 0 {
+                dealloc(self.nnptr.cast().as_ptr(), layout);
+            }
         }
     }
 }
 
-impl<T> Deref for OwnedAlloc<T> {
+impl<T> Deref for OwnedAlloc<T>
+where
+    T: ?Sized,
+{
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -59,13 +78,19 @@ impl<T> Deref for OwnedAlloc<T> {
     }
 }
 
-impl<T> DerefMut for OwnedAlloc<T> {
+impl<T> DerefMut for OwnedAlloc<T>
+where
+    T: ?Sized,
+{
     fn deref_mut(&mut self) -> &mut T {
         unsafe { self.nnptr.as_mut() }
     }
 }
 
-impl<T> fmt::Debug for OwnedAlloc<T> {
+impl<T> fmt::Debug for OwnedAlloc<T>
+where
+    T: ?Sized,
+{
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         write!(fmtr, "{:?}", self.nnptr)
     }
