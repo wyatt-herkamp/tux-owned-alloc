@@ -23,15 +23,15 @@ impl<T> UninitAlloc<T> {
     pub fn try_new() -> Result<Self, AllocErr> {
         let layout = Layout::new::<T>();
 
-        let nnptr = if layout.size() == 0 {
+        let res = if layout.size() == 0 {
             Ok(NonNull::dangling())
         } else {
-            NonNull::new(unsafe { alloc(layout) }).ok_or(AllocErr { layout })
+            NonNull::new(unsafe { alloc(layout) })
+                .map(NonNull::cast::<T>)
+                .ok_or(AllocErr { layout })
         };
 
-        nnptr
-            .map(NonNull::cast::<T>)
-            .map(|nnptr| Self { nnptr, _marker: PhantomData })
+        res.map(|nnptr| Self { nnptr, _marker: PhantomData })
     }
 
     pub fn init(self, val: T) -> OwnedAlloc<T> {

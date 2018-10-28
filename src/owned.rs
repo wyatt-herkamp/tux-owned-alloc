@@ -95,3 +95,12 @@ where
         write!(fmtr, "{:?}", self.nnptr)
     }
 }
+
+impl<T> Clone for OwnedAlloc<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self::new((**self).clone())
+    }
+}

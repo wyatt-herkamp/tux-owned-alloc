@@ -1,5 +1,7 @@
-pub use std::alloc::LayoutErr;
-use std::{alloc::Layout, fmt};
+use std::{
+    alloc::{Layout, LayoutErr as StdLayoutErr},
+    fmt,
+};
 
 #[derive(Debug, Clone)]
 pub struct AllocErr {
@@ -10,10 +12,25 @@ impl fmt::Display for AllocErr {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         write!(
             fmtr,
-            "The allocator failed for the layout of size {}, align {}",
+            "the allocator failed for the layout of size {}, align {}",
             self.layout.size(),
             self.layout.align()
         )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LayoutErr;
+
+impl fmt::Display for LayoutErr {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        fmtr.write_str("invalid layout parameters")
+    }
+}
+
+impl From<StdLayoutErr> for LayoutErr {
+    fn from(_err: StdLayoutErr) -> Self {
+        LayoutErr
     }
 }
 
@@ -29,5 +46,17 @@ impl fmt::Display for RawVecErr {
             RawVecErr::Alloc(err) => write!(fmtr, "{}", err),
             RawVecErr::Layout(err) => write!(fmtr, "{}", err),
         }
+    }
+}
+
+impl From<AllocErr> for RawVecErr {
+    fn from(err: AllocErr) -> Self {
+        RawVecErr::Alloc(err)
+    }
+}
+
+impl From<LayoutErr> for RawVecErr {
+    fn from(err: LayoutErr) -> Self {
+        RawVecErr::Layout(err)
     }
 }
