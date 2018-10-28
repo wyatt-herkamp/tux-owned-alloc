@@ -1,3 +1,4 @@
-mod core;
+mod uninit;
+mod owned;
 
-pub use self::core::{LayoutMolder, MolderInit, OwnedAlloc};
+pub use self::{owned::OwnedAlloc, uninit::UninitAlloc};
