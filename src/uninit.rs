@@ -1,6 +1,7 @@
 use super::OwnedAlloc;
 use std::{
     alloc::{alloc, dealloc, handle_alloc_error, Layout},
+    fmt,
     mem,
     ptr::NonNull,
 };
@@ -29,6 +30,21 @@ impl<T> UninitAlloc<T> {
         }
     }
 
+    pub unsafe fn init_in_place<F>(self, init: F) -> OwnedAlloc<T>
+    where
+        F: FnOnce(&mut T),
+    {
+        let raw = self.into_raw();
+        unsafe {
+            init(raw.as_mut());
+            OwnedAlloc::from_raw(raw)
+        }
+    }
+
+    pub fn raw(&self) -> NonNull<T> {
+        self.nnptr
+    }
+
     pub fn into_raw(self) -> NonNull<T> {
         let nnptr = self.nnptr;
         mem::forget(self);
@@ -43,5 +59,11 @@ impl<T> UninitAlloc<T> {
 impl<T> Drop for UninitAlloc<T> {
     fn drop(&mut self) {
         unsafe { dealloc(self.nnptr.cast().as_ptr(), Layout::new::<T>()) }
+    }
+}
+
+impl<T> fmt::Debug for OwnedAlloc<T> {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        write!("{:?}", self.nnptr)
     }
 }

@@ -1,6 +1,7 @@
 use super::UninitAlloc;
 use std::{
     alloc::{dealloc, Layout},
+    fmt,
     mem,
     ops::{Deref, DerefMut},
     ptr::NonNull,
@@ -24,6 +25,10 @@ impl<T> OwnedAlloc<T> {
         let alloc = unsafe { UninitAlloc::from_raw(self.nnptr) };
         mem::forget(self);
         (val, alloc)
+    }
+
+    pub fn raw(&self) -> NonNull<T> {
+        self.nnptr
     }
 
     pub fn into_raw(self) -> NonNull<T> {
@@ -57,5 +62,11 @@ impl<T> Deref for OwnedAlloc<T> {
 impl<T> DerefMut for OwnedAlloc<T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { self.nnptr.as_mut() }
+    }
+}
+
+impl<T> fmt::Debug for OwnedAlloc<T> {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        write!("{:?}", self.nnptr)
     }
 }
