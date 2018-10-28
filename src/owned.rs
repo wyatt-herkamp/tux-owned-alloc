@@ -37,6 +37,15 @@ impl<T> OwnedAlloc<T>
 where
     T: ?Sized,
 {
+    pub fn drop_in_place(self) -> UninitAlloc<T> {
+        let alloc = unsafe {
+            self.nnptr.as_ptr().drop_in_place();
+            UninitAlloc::from_raw(self.nnptr)
+        };
+        mem::forget(self);
+        alloc
+    }
+
     pub fn raw(&self) -> NonNull<T> {
         self.nnptr
     }
@@ -102,5 +111,11 @@ where
 {
     fn clone(&self) -> Self {
         Self::new((**self).clone())
+    }
+}
+
+impl<T> From<T> for OwnedAlloc<T> {
+    fn from(val: T) -> Self {
+        Self::new(val)
     }
 }
