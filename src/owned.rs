@@ -11,7 +11,8 @@ use std::{
 /// Dynamic allocation of a `T` whose memory is considered fully initialized.
 /// The allocation and its content are freed on `drop`. Similar to a `Box`. If
 /// the size of the allocation is zero, no allocation is performed and a
-/// dangling pointer is used (just like in `std`).
+/// dangling pointer is used (just like in `std`). For the drop checker, the
+/// type acts as if it contains a `T` due to usage of `PhantomData<T>`.
 pub struct OwnedAlloc<T>
 where
     T: ?Sized,

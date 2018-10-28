@@ -2,7 +2,8 @@ use super::{OwnedAlloc, UninitAlloc};
 use std::fmt;
 
 /// Pointer to memory allocaation that might be either initialized or
-/// uninitialized.
+/// uninitialized. For the drop checker, the type acts as if it contains a `T`
+/// due to usage of `PhantomData<T>`.
 pub enum MaybeUninitAlloc<T>
 where
     T: ?Sized,

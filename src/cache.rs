@@ -12,9 +12,8 @@
 ///     let mut res = 0usize;
 ///
 ///     for i in 1 ..= iter {
-///         let alloc = cache.take_or(|| {
-///             UninitAlloc::from(RawVec::<usize>::with_capacity(n))
-///         });
+///         let alloc =
+///             cache.take_or(|| UninitAlloc::from(RawVec::with_capacity(n)));
 ///
 ///         let inited = unsafe {
 ///             alloc.init_in_place(|slice| {

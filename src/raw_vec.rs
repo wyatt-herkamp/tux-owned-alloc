@@ -13,7 +13,22 @@ use std::{
 /// resizable and is freed on `drop`. No initialization or deinitialization of
 /// the elements is performed. This type may be useful for `Vec`-like types. If
 /// the size of the allocation is zero, no allocation is performed and a
-/// dangling pointer is used (just like in `std`).
+/// dangling pointer is used (just like in `std`). For the drop checker, the
+/// type acts as if it contains a `T` due to usage of `PhantomData<T>`.
+///
+/// ```rust
+/// extern crate owned_alloc;
+///
+/// use owned_alloc::RawVec;
+///
+/// let mut vec = RawVec::<usize>::with_capacity(200);
+/// assert_eq!(200, vec.cap());
+/// assert_eq!(200, unsafe { vec.as_slice().len() });
+///
+/// vec.resize(354);
+/// assert_eq!(354, vec.cap());
+/// assert_eq!(354, unsafe { vec.as_slice().len() });
+/// ```
 pub struct RawVec<T> {
     nnptr: NonNull<T>,
     cap: usize,
