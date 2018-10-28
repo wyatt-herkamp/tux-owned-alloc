@@ -1,4 +1,5 @@
 mod uninit;
 mod owned;
+mod cache;
 
-pub use self::{owned::OwnedAlloc, uninit::UninitAlloc};
+pub use self::{cache::Cache, owned::OwnedAlloc, uninit::UninitAlloc};

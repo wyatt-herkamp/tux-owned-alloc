@@ -34,11 +34,9 @@ impl<T> UninitAlloc<T> {
     where
         F: FnOnce(&mut T),
     {
-        let raw = self.into_raw();
-        unsafe {
-            init(raw.as_mut());
-            OwnedAlloc::from_raw(raw)
-        }
+        let mut raw = self.into_raw();
+        init(raw.as_mut());
+        OwnedAlloc::from_raw(raw)
     }
 
     pub fn raw(&self) -> NonNull<T> {
@@ -62,8 +60,8 @@ impl<T> Drop for UninitAlloc<T> {
     }
 }
 
-impl<T> fmt::Debug for OwnedAlloc<T> {
+impl<T> fmt::Debug for UninitAlloc<T> {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
-        write!("{:?}", self.nnptr)
+        write!(fmtr, "{:?}", self.nnptr)
     }
 }

@@ -67,6 +67,6 @@ impl<T> DerefMut for OwnedAlloc<T> {
 
 impl<T> fmt::Debug for OwnedAlloc<T> {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
-        write!("{:?}", self.nnptr)
+        write!(fmtr, "{:?}", self.nnptr)
     }
 }
