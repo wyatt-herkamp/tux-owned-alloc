@@ -1,4 +1,4 @@
-use super::{AllocErr, LayoutErr, RawVecErr};
+use super::{AllocErr, LayoutErr, RawVecErr, UninitAlloc};
 use std::{
     alloc::{alloc, dealloc, handle_alloc_error, realloc, Layout},
     fmt,
@@ -50,11 +50,21 @@ impl<T> RawVec<T> {
         self.nnptr
     }
 
+    pub fn raw_slice(&self) -> NonNull<[T]> {
+        unsafe { NonNull::from(self.as_slice()) }
+    }
+
+    pub fn into_raw_slice(self) -> NonNull<[T]> {
+        let ptr = self.raw_slice();
+        mem::forget(self);
+        ptr
+    }
+
     pub unsafe fn as_slice(&self) -> &[T] {
         slice::from_raw_parts(self.nnptr.as_ptr(), self.cap())
     }
 
-    pub unsafe fn as_mut_slice(&self) -> &mut [T] {
+    pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
         slice::from_raw_parts_mut(self.nnptr.as_ptr(), self.cap())
     }
 
@@ -109,5 +119,11 @@ impl<T> fmt::Debug for RawVec<T> {
 impl<T> Drop for RawVec<T> {
     fn drop(&mut self) {
         self.free();
+    }
+}
+
+impl<T> From<UninitAlloc<T>> for RawVec<T> {
+    fn from(alloc: UninitAlloc<T>) -> Self {
+        Self { nnptr: alloc.into_raw(), cap: 1, _marker: PhantomData }
     }
 }

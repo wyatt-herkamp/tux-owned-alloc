@@ -1,4 +1,4 @@
-use super::{AllocErr, OwnedAlloc};
+use super::{AllocErr, OwnedAlloc, RawVec};
 use std::{
     alloc::{alloc, dealloc, handle_alloc_error, Layout},
     fmt,
@@ -92,5 +92,11 @@ where
 {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         write!(fmtr, "{:?}", self.nnptr)
+    }
+}
+
+impl<T> From<RawVec<T>> for UninitAlloc<[T]> {
+    fn from(alloc: RawVec<T>) -> Self {
+        Self { nnptr: alloc.into_raw_slice(), _marker: PhantomData }
     }
 }
