@@ -186,4 +186,12 @@ mod test {
 
         assert_eq!(alloc.move_inner().0, 20);
     }
+
+    #[test]
+    fn from_into_std_box() {
+        let boxed = unsafe { OwnedAlloc::new([5u128; 32]).into_box() };
+        assert_eq!(*boxed, [5; 32]);
+        let raw = unsafe { OwnedAlloc::from_box(boxed) };
+        assert_eq!(*raw, [5; 32]);
+    }
 }

@@ -272,4 +272,12 @@ mod test {
         alloc.resize(5);
         assert_eq!(alloc.cap(), 5);
     }
+
+    #[test]
+    fn from_into_std_vec() {
+        let vec = unsafe { RawVec::<u128>::with_capacity(465).into_vec(0) };
+        assert_eq!(vec.capacity(), 465);
+        let raw = unsafe { RawVec::from_vec(vec) };
+        assert_eq!(raw.cap(), 465);
+    }
 }
