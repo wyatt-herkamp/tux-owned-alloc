@@ -1,15 +1,23 @@
 use super::{OwnedAlloc, UninitAlloc};
 use std::fmt;
 
+/// Pointer to memory allocaation that might be either initialized or
+/// uninitialized.
 pub enum MaybeUninitAlloc<T>
 where
     T: ?Sized,
 {
+    /// Initialized allocation.
     Init(OwnedAlloc<T>),
+
+    /// Uninitialized allocation.
     Uninit(UninitAlloc<T>),
 }
 
 impl<T> MaybeUninitAlloc<T> {
+    /// If the allocation was initialized, this is a no-op. If it wasn't, the
+    /// passed function is called and its return value is used to initialize the
+    /// memory. In both cases, an allocation considered initialized is returned.
     pub fn or_init<F>(self, init: F) -> OwnedAlloc<T>
     where
         F: FnOnce() -> T,
@@ -25,30 +33,14 @@ impl<T> MaybeUninitAlloc<T>
 where
     T: ?Sized,
 {
-    pub fn init_as_ok(self) -> Result<OwnedAlloc<T>, UninitAlloc<T>> {
-        match self {
-            MaybeUninitAlloc::Init(ptr) => Ok(ptr),
-            MaybeUninitAlloc::Uninit(ptr) => Err(ptr),
-        }
-    }
-
-    pub fn uninit_as_ok(self) -> Result<UninitAlloc<T>, OwnedAlloc<T>> {
-        match self {
-            MaybeUninitAlloc::Init(ptr) => Err(ptr),
-            MaybeUninitAlloc::Uninit(ptr) => Ok(ptr),
-        }
-    }
-
-    pub fn modify<F, A>(&mut self, visit: F) -> Option<A>
-    where
-        F: FnOnce(&mut T) -> A,
-    {
-        match self {
-            MaybeUninitAlloc::Init(ptr) => Some(visit(&mut **ptr)),
-            MaybeUninitAlloc::Uninit(_) => None,
-        }
-    }
-
+    /// If the allocation was initialized, this is a no-op. If it wasn't, the
+    /// passed function is called with a mutable reference to the uninitialized
+    /// memory and the function is expected to initialize the memory. In both
+    /// cases, an allocation considered initialized is returned.
+    ///
+    /// # Safety
+    /// This function is `unsafe` because the passed function might not
+    /// initialize the memory correctly.
     pub unsafe fn or_init_in_place<F>(self, init: F) -> OwnedAlloc<T>
     where
         F: FnOnce(&mut T),
@@ -56,6 +48,35 @@ where
         match self {
             MaybeUninitAlloc::Init(ptr) => ptr,
             MaybeUninitAlloc::Uninit(ptr) => ptr.init_in_place(init),
+        }
+    }
+
+    /// Encodes this type as a `Result` with an `OwnedAlloc` as `Ok`.
+    pub fn init_as_ok(self) -> Result<OwnedAlloc<T>, UninitAlloc<T>> {
+        match self {
+            MaybeUninitAlloc::Init(ptr) => Ok(ptr),
+            MaybeUninitAlloc::Uninit(ptr) => Err(ptr),
+        }
+    }
+
+    /// Encodes this type as a `Result` with an `UninitAlloc` as `Ok`.
+    pub fn uninit_as_ok(self) -> Result<UninitAlloc<T>, OwnedAlloc<T>> {
+        match self {
+            MaybeUninitAlloc::Init(ptr) => Err(ptr),
+            MaybeUninitAlloc::Uninit(ptr) => Ok(ptr),
+        }
+    }
+
+    /// If the memory is uninitialized, `None` is returned. If it is
+    /// initialized, the passed function is called with a mutable reference to
+    /// the allocation, and its return value is wrapped into a `Some`.
+    pub fn modify<F, A>(&mut self, visit: F) -> Option<A>
+    where
+        F: FnOnce(&mut T) -> A,
+    {
+        match self {
+            MaybeUninitAlloc::Init(ptr) => Some(visit(&mut **ptr)),
+            MaybeUninitAlloc::Uninit(_) => None,
         }
     }
 }

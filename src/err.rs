@@ -3,8 +3,10 @@ use std::{
     fmt,
 };
 
+/// Error returned from the allocator.
 #[derive(Debug, Clone)]
 pub struct AllocErr {
+    /// The requested layout.
     pub layout: Layout,
 }
 
@@ -19,6 +21,7 @@ impl fmt::Display for AllocErr {
     }
 }
 
+/// Error caused by invalid size or alignment.
 #[derive(Debug, Clone)]
 pub struct LayoutErr;
 
@@ -34,9 +37,12 @@ impl From<StdLayoutErr> for LayoutErr {
     }
 }
 
+/// Errors returned by the `RawVec`.
 #[derive(Debug, Clone)]
 pub enum RawVecErr {
+    /// Allocation error.
     Alloc(AllocErr),
+    /// Layout error.
     Layout(LayoutErr),
 }
 

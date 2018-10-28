@@ -7,6 +7,8 @@ use std::{
     ptr::NonNull,
 };
 
+/// Dynamic allocation of a `T` whose memory is considered uninitialized. The
+/// allocation is freed on `drop`.
 pub struct UninitAlloc<T>
 where
     T: ?Sized,
@@ -16,10 +18,13 @@ where
 }
 
 impl<T> UninitAlloc<T> {
+    /// Creates room for a `T`. In case of allocation error, the handler
+    /// registered via stdlib is called.
     pub fn new() -> Self {
         Self::try_new().unwrap_or_else(|err| handle_alloc_error(err.layout))
     }
 
+    /// Creates room for a `T`. In case of allocation error, `Err` is returned.
     pub fn try_new() -> Result<Self, AllocErr> {
         let layout = Layout::new::<T>();
 
@@ -34,6 +39,8 @@ impl<T> UninitAlloc<T> {
         res.map(|nnptr| Self { nnptr, _marker: PhantomData })
     }
 
+    /// Initializes the memory and returns the allocation now considered
+    /// initialized.
     pub fn init(self, val: T) -> OwnedAlloc<T> {
         let raw = self.into_raw();
         unsafe {
@@ -47,6 +54,13 @@ impl<T> UninitAlloc<T>
 where
     T: ?Sized,
 {
+    /// Calls a function with a mutable reference to uninitialized memory and
+    /// returns the allocation now considered initialized. The passed function
+    /// is expected to initialize the memory.
+    ///
+    /// # Safety
+    /// This function is `unsafe` because the passed function might not
+    /// initialize the memory correctly.
     pub unsafe fn init_in_place<F>(self, init: F) -> OwnedAlloc<T>
     where
         F: FnOnce(&mut T),
@@ -56,16 +70,23 @@ where
         OwnedAlloc::from_raw(raw)
     }
 
+    /// Returns the raw non-null pointer of the allocation.
     pub fn raw(&self) -> NonNull<T> {
         self.nnptr
     }
 
+    /// "Forgets" dropping the allocation and returns its raw non-null pointer.
     pub fn into_raw(self) -> NonNull<T> {
         let nnptr = self.nnptr;
         mem::forget(self);
         nnptr
     }
 
+    /// Recreate the `UninitAlloc` from a raw non-null pointer.
+    ///
+    /// # Safety
+    /// This functions is `unsafe` because passing the wrong pointer leads to
+    /// undefined behaviour.
     pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
         Self { nnptr, _marker: PhantomData }
     }

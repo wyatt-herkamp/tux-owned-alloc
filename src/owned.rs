@@ -8,6 +8,8 @@ use std::{
     ptr::NonNull,
 };
 
+/// Dynamic allocation of a `T` whose memory is considered fully initialized.
+/// The allocation and its content are freed on `drop`. Similar to a `Box`.
 pub struct OwnedAlloc<T>
 where
     T: ?Sized,
@@ -17,14 +19,20 @@ where
 }
 
 impl<T> OwnedAlloc<T> {
+    /// Creates an allocation and initializes it to the passed argument. In case
+    /// of allocation error, the handler registered via stdlib is called.
     pub fn new(val: T) -> Self {
         UninitAlloc::new().init(val)
     }
 
+    /// Creates an allocation and initializes it to the passed argument. In case
+    /// of allocation error, `Err` is returned.
     pub fn try_new(val: T) -> Result<Self, AllocErr> {
         UninitAlloc::try_new().map(|alloc| alloc.init(val))
     }
 
+    /// Moves the stored value out from the allocation. The value and the
+    /// allocation now considered uninitialized are returned.
     pub fn move_inner(self) -> (T, UninitAlloc<T>) {
         let val = unsafe { self.nnptr.as_ptr().read() };
         let alloc = unsafe { UninitAlloc::from_raw(self.nnptr) };
@@ -37,6 +45,8 @@ impl<T> OwnedAlloc<T>
 where
     T: ?Sized,
 {
+    /// Drops the memory and returns the allocation now considered
+    /// uninitialized.
     pub fn drop_in_place(self) -> UninitAlloc<T> {
         let alloc = unsafe {
             self.nnptr.as_ptr().drop_in_place();
@@ -46,16 +56,25 @@ where
         alloc
     }
 
+    /// Returns the raw non-null pointer of the allocation.
     pub fn raw(&self) -> NonNull<T> {
         self.nnptr
     }
 
+    /// "Forgets" dropping both the allocation and its content and returns its
+    /// raw non-null pointer.
     pub fn into_raw(self) -> NonNull<T> {
         let nnptr = self.nnptr;
         mem::forget(self);
         nnptr
     }
 
+    /// Recreate the `OwnedAlloc` from a raw non-null pointer.
+    ///
+    /// # Safety
+    /// This functions is `unsafe` because passing the wrong pointer leads to
+    /// undefined behaviour. Passing a pointer to uninitialized memory is also
+    /// undefined behaviour.
     pub unsafe fn from_raw(nnptr: NonNull<T>) -> Self {
         Self { nnptr, _marker: PhantomData }
     }
