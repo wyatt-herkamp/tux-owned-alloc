@@ -60,6 +60,18 @@ impl<T> RawVec<T> {
         ptr
     }
 
+    pub unsafe fn from_raw_parts(nnptr: NonNull<T>, cap: usize) -> Self {
+        Self { nnptr, cap, _marker: PhantomData }
+    }
+
+    pub unsafe fn from_raw_slice(mut raw: NonNull<[T]>) -> Self {
+        Self {
+            nnptr: unsafe { NonNull::new_unchecked(raw.as_mut().as_mut_ptr()) },
+            cap: unsafe { raw.as_ref().len() },
+            _marker: PhantomData,
+        }
+    }
+
     pub unsafe fn as_slice(&self) -> &[T] {
         slice::from_raw_parts(self.nnptr.as_ptr(), self.cap())
     }
