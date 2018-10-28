@@ -11,7 +11,9 @@ use std::{
 /// Raw Vector allocation. This allocation, instead of holding a pointer to a
 /// single `T`, holds a pointer to as many `T` are required. The allocation is
 /// resizable and is freed on `drop`. No initialization or deinitialization of
-/// the elements is performed. This type may be useful for `Vec`-like types.
+/// the elements is performed. This type may be useful for `Vec`-like types. If
+/// the size of the allocation is zero, no allocation is performed and a
+/// dangling pointer is used (just like in `std`).
 pub struct RawVec<T> {
     nnptr: NonNull<T>,
     cap: usize,
@@ -201,8 +203,8 @@ impl<T> From<UninitAlloc<T>> for RawVec<T> {
     }
 }
 
-unsafe impl<T> Send for UninitAlloc<T> where T: Send {}
-unsafe impl<T> Sync for UninitAlloc<T> where T: Sync {}
+unsafe impl<T> Send for RawVec<T> where T: Send {}
+unsafe impl<T> Sync for RawVec<T> where T: Sync {}
 
 #[cfg(test)]
 mod test {
@@ -210,8 +212,13 @@ mod test {
 
     #[test]
     fn cap_is_the_one_passed() {
-        let alloc = RawVec::<usize>::with_capacity(20);
-
+        let mut alloc = RawVec::<usize>::with_capacity(20);
         assert_eq!(alloc.cap(), 20);
+
+        alloc.resize(50);
+        assert_eq!(alloc.cap(), 50);
+
+        alloc.resize(5);
+        assert_eq!(alloc.cap(), 5);
     }
 }

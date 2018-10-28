@@ -9,7 +9,9 @@ use std::{
 };
 
 /// Dynamic allocation of a `T` whose memory is considered fully initialized.
-/// The allocation and its content are freed on `drop`. Similar to a `Box`.
+/// The allocation and its content are freed on `drop`. Similar to a `Box`. If
+/// the size of the allocation is zero, no allocation is performed and a
+/// dangling pointer is used (just like in `std`).
 pub struct OwnedAlloc<T>
 where
     T: ?Sized,
@@ -139,8 +141,8 @@ impl<T> From<T> for OwnedAlloc<T> {
     }
 }
 
-unsafe impl<T> Send for UninitAlloc<T> where T: ?Sized + Send {}
-unsafe impl<T> Sync for UninitAlloc<T> where T: ?Sized + Sync {}
+unsafe impl<T> Send for OwnedAlloc<T> where T: ?Sized + Send {}
+unsafe impl<T> Sync for OwnedAlloc<T> where T: ?Sized + Sync {}
 
 #[cfg(test)]
 mod test {

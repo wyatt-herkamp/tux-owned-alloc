@@ -8,7 +8,8 @@ use std::{
 };
 
 /// Dynamic allocation of a `T` whose memory is considered uninitialized. The
-/// allocation is freed on `drop`.
+/// allocation is freed on `drop`. If the size of the allocation is zero, no
+/// allocation is performed and a dangling pointer is used (just like in `std`).
 pub struct UninitAlloc<T>
 where
     T: ?Sized,
