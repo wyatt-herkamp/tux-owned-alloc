@@ -52,6 +52,31 @@ where
         }
     }
 
+    /// Tests if the allocation is initialized.
+    pub fn is_initialized(&self) -> bool {
+        match self {
+            MaybeUninitAlloc::Init(_) => true,
+            MaybeUninitAlloc::Uninit(_) => false,
+        }
+    }
+
+    /// Tests if the allocation is uninitialized.
+    pub fn is_uninitialized(&self) -> bool {
+        match self {
+            MaybeUninitAlloc::Init(_) => true,
+            MaybeUninitAlloc::Uninit(_) => false,
+        }
+    }
+
+    /// If the memory is initialized, this function drops its content. In any
+    /// case, the allocation now with uninitialized content is returned.
+    pub fn drop_in_place(self) -> UninitAlloc<T> {
+        match self {
+            MaybeUninitAlloc::Init(ptr) => ptr.drop_in_place(),
+            MaybeUninitAlloc::Uninit(ptr) => ptr,
+        }
+    }
+
     /// Encodes this type as a `Result` with an `OwnedAlloc` as `Ok`.
     pub fn init_as_ok(self) -> Result<OwnedAlloc<T>, UninitAlloc<T>> {
         match self {
