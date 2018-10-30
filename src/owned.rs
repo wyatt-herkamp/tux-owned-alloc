@@ -94,12 +94,16 @@ where
     /// Drops the memory and returns the allocation now considered
     /// uninitialized.
     pub fn drop_in_place(self) -> UninitAlloc<T> {
-        let alloc = unsafe {
+        unsafe {
             self.nnptr.as_ptr().drop_in_place();
-            UninitAlloc::from_raw(self.nnptr)
-        };
-        mem::forget(self);
-        alloc
+            UninitAlloc::from_raw(self.into_raw())
+        }
+    }
+
+    /// "Forgets" about dropping the inner value and returns an uninitialized
+    /// allocation.
+    pub fn forget_inner(self) -> UninitAlloc<T> {
+        unsafe { UninitAlloc::from_raw(self.into_raw()) }
     }
 }
 
