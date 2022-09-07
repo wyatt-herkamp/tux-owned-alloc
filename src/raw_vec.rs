@@ -35,12 +35,19 @@ pub struct RawVec<T> {
     _marker: PhantomData<T>,
 }
 
+impl<T> Default for RawVec<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> RawVec<T> {
     /// Creates a new `RawVec` of capacity `0` and a dangling pointer. No
     /// allocation is performed.
     pub fn new() -> Self {
         Self { nnptr: NonNull::dangling(), cap: 0, _marker: PhantomData }
     }
+
 
     /// Creates a new `RawVec` with a given capacity. In case of allocation
     /// error, the handler registered via stdlib is called. In case of overflow
@@ -51,7 +58,7 @@ impl<T> RawVec<T> {
             Err(RawVecErr::Alloc(err)) => handle_alloc_error(err.layout),
             Err(RawVecErr::Layout(err)) => {
                 panic!("Capacity overflows memory size: {}", err)
-            },
+            }
         }
     }
 
@@ -64,7 +71,7 @@ impl<T> RawVec<T> {
         } else {
             NonNull::new(unsafe { alloc(layout) })
                 .map(NonNull::cast::<T>)
-                .ok_or(AllocErr { layout }.into())
+                .ok_or_else(|| AllocErr { layout }.into())
         };
 
         res.map(|nnptr| Self { nnptr, cap, _marker: PhantomData })
@@ -185,7 +192,7 @@ impl<T> RawVec<T> {
             Err(RawVecErr::Alloc(err)) => handle_alloc_error(err.layout),
             Err(RawVecErr::Layout(err)) => {
                 panic!("Capacity overflows memory size: {}", err)
-            },
+            }
 
             Ok(_) => (),
         }
@@ -205,8 +212,8 @@ impl<T> RawVec<T> {
             NonNull::new(unsafe {
                 realloc(self.nnptr.cast().as_ptr(), old, layout.size())
             })
-            .map(NonNull::cast::<T>)
-            .ok_or(AllocErr { layout }.into())
+                .map(NonNull::cast::<T>)
+                .ok_or_else(|| AllocErr { layout }.into())
         };
 
         res.map(|nnptr| {
@@ -236,8 +243,8 @@ impl<T> fmt::Debug for RawVec<T> {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         write!(
             fmtr,
-            "RawVec {} pointer {:?}, cap: {} {}",
-            '{', self.nnptr, self.cap, '}'
+            "RawVec {{ pointer {:?}, cap: {} }}",
+            self.nnptr, self.cap
         )
     }
 }
@@ -255,6 +262,7 @@ impl<T> From<UninitAlloc<T>> for RawVec<T> {
 }
 
 unsafe impl<T> Send for RawVec<T> where T: Send {}
+
 unsafe impl<T> Sync for RawVec<T> where T: Sync {}
 
 #[cfg(test)]

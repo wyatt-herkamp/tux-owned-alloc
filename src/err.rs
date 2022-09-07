@@ -1,5 +1,5 @@
 use std::{
-    alloc::{Layout, LayoutErr as StdLayoutErr},
+    alloc::{Layout, LayoutError as StdLayoutErr},
     fmt,
 };
 

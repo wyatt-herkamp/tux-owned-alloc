@@ -13,11 +13,18 @@ use std::{
 /// For the drop checker, the type acts as if it contains a `T` due to usage of
 /// `PhantomData<T>`.
 pub struct UninitAlloc<T>
-where
-    T: ?Sized,
+    where
+        T: ?Sized,
 {
     nnptr: NonNull<T>,
     _marker: PhantomData<T>,
+}
+
+impl<T> Default for UninitAlloc<T>
+{
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<T> UninitAlloc<T> {
@@ -54,8 +61,8 @@ impl<T> UninitAlloc<T> {
 }
 
 impl<T> UninitAlloc<T>
-where
-    T: ?Sized,
+    where
+        T: ?Sized,
 {
     /// Calls a function with a mutable reference to uninitialized memory and
     /// returns the allocation now considered initialized. The passed function
@@ -65,8 +72,8 @@ where
     /// This function is `unsafe` because the passed function might not
     /// initialize the memory correctly.
     pub unsafe fn init_in_place<F>(self, init: F) -> OwnedAlloc<T>
-    where
-        F: FnOnce(&mut T),
+        where
+            F: FnOnce(&mut T),
     {
         let mut raw = self.into_raw();
         init(raw.as_mut());
@@ -96,8 +103,8 @@ where
 }
 
 impl<T> Drop for UninitAlloc<T>
-where
-    T: ?Sized,
+    where
+        T: ?Sized,
 {
     fn drop(&mut self) {
         unsafe {
@@ -111,8 +118,8 @@ where
 }
 
 impl<T> fmt::Debug for UninitAlloc<T>
-where
-    T: ?Sized,
+    where
+        T: ?Sized,
 {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         write!(fmtr, "{:?}", self.nnptr)
@@ -126,6 +133,7 @@ impl<T> From<RawVec<T>> for UninitAlloc<[T]> {
 }
 
 unsafe impl<T> Send for UninitAlloc<T> where T: ?Sized + Send {}
+
 unsafe impl<T> Sync for UninitAlloc<T> where T: ?Sized + Sync {}
 
 #[cfg(test)]

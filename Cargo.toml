@@ -8,3 +8,4 @@ readme = "README.md"
 license = "MIT"
 keywords = ["memory", "raw-vec", "manual-memory", "owned-allocation", "dynamic-allocation"]
 categories = ["memory-management", "rust-patterns", "data-structures"]
+edition = "2021"
