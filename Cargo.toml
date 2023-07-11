@@ -1,5 +1,5 @@
 [package]
-name = "owned-alloc"
+name = "tux-owned-alloc"
 version = "0.2.0"
 authors = ["Bruno Zimmermann <brunoczim@gmail.com>"]
 description = "A crate to help reducing manual memory management errors."
